@@ -84,6 +84,14 @@ class mainFrame(wx.Frame):
 		num = int(self.randomFrame.NumberEdit.GetValue())
 		for i in range(0, num):
 			pts.append(point(random.randint(0, MAX_NUM - 1), random.randint(0, MAX_NUM - 1)))
+		t1 = time.clock()
+		self.ClosestPair(pts)
+		t2 = time.clock()
+		self.CommonMinDis(pts)
+		t3 = time.clock()
+		print "When the num of points up to", num
+		print "Common method cost", t3 - t2, "s"
+		print "Divide and Conquer method cost", t2 - t1, "s"
 
 	def CommonMinDis(self, pts):
 		dr = MAX_NUM - 1
@@ -198,6 +206,30 @@ class mainFrame(wx.Frame):
 		return minDis
 	def FindMinDis(self):
 		r = self.ClosestPair(self.points)
-		print r[0]
-		ee = self.CommonMinDis(self.points)
-		print ee[0]
+		self.ShowMinDis(r)
+
+	def ShowMinDis(self, result):
+		sysstr = platform.system()
+		dc = None
+		if sysstr == "Linux":
+			dc = wx.PaintDC(self)
+		elif sysstr == "Windows":
+			dc = wx.ClientDC(self)
+		brush = wx.Brush("White")
+		dc.SetBackground(brush)
+		dc.Clear()
+		color = wx.Colour(0, 0, 0)
+		b = wx.Brush(color)
+		dc.SetBrush(b)
+		for p in self.points:
+			if p not in result[1]:
+				dc.DrawCircle(p.x, p.y, 2)
+		color = wx.Colour(255, 0, 0)
+		rb = wx.Brush(color)
+		dc.SetBrush(rb)
+		for p in result[1]:
+			dc.DrawCircle(p.x, p.y, 2)
+		dc.DrawLine(result[1][0].x, result[1][0].y, result[1][1].x, result[1][1].y)
+		font = wx.Font(18, wx.ROMAN, wx.ITALIC, wx.NORMAL)
+		dc.SetFont(font)
+		dc.DrawText(str(result[0]), 0, 0)
