@@ -4,6 +4,7 @@ from randomPointFrame import randomPointFrame
 from point import point
 import random
 import time
+import platform
 
 MAX_NUM = 2 ** 32
 
@@ -26,7 +27,7 @@ class mainFrame(wx.Frame):
 		self.pointMenu.AppendItem(self.randomItem)
 		self.pointMenu.AppendItem(self.computeItem)
 		self.randomFrame = randomPointFrame(self, "please input")
-		self.menuBar.Append(self.pointMenu, "&point")
+		self.menuBar.Append(self.pointMenu, "Point")
 		self.SetMenuBar(self.menuBar)
 		self.Bind(wx.EVT_MENU, self.MenuHandler)
 		self.Bind(wx.EVT_LEFT_DOWN, self.AddPoint)
@@ -38,7 +39,12 @@ class mainFrame(wx.Frame):
 		self.DrawPoint()
 
 	def DrawPoint(self):
-		dc = wx.PaintDC(self)
+		sysstr = platform.system()
+		dc = None
+		if sysstr == "Linux":
+			dc = wx.PaintDC(self)
+		elif sysstr == "Windows":
+			dc = wx.ClientDC(self)
 		brush = wx.Brush("White")
 		dc.SetBackground(brush)
 		dc.Clear()
@@ -78,9 +84,6 @@ class mainFrame(wx.Frame):
 		num = int(self.randomFrame.NumberEdit.GetValue())
 		for i in range(0, num):
 			pts.append(point(random.randint(0, MAX_NUM - 1), random.randint(0, MAX_NUM - 1)))
-
-	def findMinDis(self):
-		a = 1
 
 	def CommonMinDis(self, pts):
 		dr = MAX_NUM - 1
@@ -128,26 +131,73 @@ class mainFrame(wx.Frame):
 			list1.append(l[i])
 		for i in range(length / 2, length):
 			list2.append(l[i])
-		self.MergeSort(t, list1)
-		self.MergeSort(t, list2)
+		list1 = self.MergeSort(t, list1)
+		list2 = self.MergeSort(t, list2)
 		return self.Merge(t, list1, list2)
 
 	def InsertSort(self, t, l):
-		result = []
+		minPoint = point(-MAX_NUM, -MAX_NUM)
+		maxPoint = point(MAX_NUM, MAX_NUM)
+		result = [minPoint, maxPoint]
 		for p in l:
 			length = len(result)
-			for i in range(0, length + 1):
-				if i is length:
-					result.append(p)
+			for i in range(1, length):
 				if t is 0:
-					if l[i].x <= p.x and l[i + 1].x > p.x:
+					if result[i - 1].x <= p.x and result[i].x > p.x:
 						result.insert(i, p)
 						break
 				else:
-					if l[i].y <= p.y and l[i + 1].y > p.y:
+					if result[i - 1].y <= p.y and result[i].y > p.y:
 						result.insert(i, p)
 						break
+		result.remove(minPoint)
+		result.remove(maxPoint)
 		return result
-	def ClosesetPair(self, l):
-		sortX = MergeSort(0, l)
-		sortY = MergeSort(1, l)
+	def ClosestPair(self, l):
+		sortX = self.MergeSort(0, l)
+		sortY = self.MergeSort(1, l)
+		return self.ClosestPairRec(sortX, sortY)
+
+	def ClosestPairRec(self, sortX, sortY):
+		length = len(sortX)
+		if (length < 5):
+			return self.CommonMinDis(sortX)
+		middle = length / 2
+		mid = sortX[middle]
+		leftSortY = []
+		rightSortY = []
+		for p in sortY:
+			if p.x < mid.x:
+				leftSortY.append(p)
+			else:
+				rightSortY.append(p)
+		leftSortX = []
+		rightSortX = []
+		for i in range(0, middle):
+			leftSortX.append(sortX[i])
+		for i in range(middle, length):
+			rightSortX.append(sortX[i])
+		leftResult = self.ClosestPairRec(leftSortX, leftSortY)
+		rightResult = self.ClosestPairRec(rightSortX, rightSortY)
+		minDis = MAX_NUM
+		if leftResult[0] < rightResult[0]:
+			minDis = leftResult
+		else:
+			minDis = rightResult
+		s = []
+		for p in sortY:
+			if abs(p.x - mid.x) <= minDis[0]:
+				s.append(p)
+		length = len(s)
+		for i in range(0, length):
+			for j in range(i + 1, i + 8):
+				if j == length:
+					break
+				if s[i].dis(s[j]) < minDis[0]:
+					minDis = (s[i].dis(s[j]),(s[i], s[j]))
+		return minDis
+	def FindMinDis(self):
+		r = self.ClosestPair(self.points)
+		print r[0]
+		ee = self.CommonMinDis(self.points)
+		print ee[0]
